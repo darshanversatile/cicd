@@ -4,40 +4,37 @@ const path = require("path");
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json()); // For JSON payloads
+app.use(express.urlencoded({ extended: true })); // For URL-encoded payloads
 
-app.use(express.urlencoded({ extended: true }));
+const filePath = path.join(__dirname, "request-body.txt");
 
 app.post("/", (req, res) => {
-  const filePath = path.join(__dirname, "request-body.txt");
+  const payload = req.body;
 
-  const requestBody = JSON.stringify(req.body, null, 2);
-
-  fs.writeFile(filePath, requestBody, (err) => {
+  // Log payload for debugging
+  fs.writeFile(filePath, JSON.stringify(payload, null, 2), (err) => {
     if (err) {
       console.error("Error writing to file:", err);
       return res.status(500).send("Internal Server Error");
     }
-    res.send("Request body written to file successfully");
   });
-});
 
+  // Check for the specific merge event
+  if (payload.ref === "refs/heads/prod" && payload.before && payload.after) {
+    // Look for a specific push event where 'main' was merged into 'prod'
+    const isMerge = payload.commits.some((commit) =>
+      commit.message.includes("Merge branch 'main'")
+    );
 
-// changes has doneopop[op[]]
-
-
-app.get("/", (req, res) => {
-  const filePath = path.join(__dirname, "request-body.txt");
-
-  const requestBody = JSON.stringify(req.body, null, 2);
-
-  fs.writeFile(filePath, requestBody, (err) => {
-    if (err) {
-      console.error("Error writing to file:", err);
-      return res.status(500).send("Internal Server Error");
+    if (isMerge) {
+      // Send notification or handle the merge event
+      console.log("The main branch was merged into the prod branch.");
+      return res.send("Main branch merged into Prod branch.");
     }
-    res.send("Request body written to file successfully");
-  });
+  }
+
+  res.status(200).send("Event received");
 });
 
 app.listen(3000, () => {
