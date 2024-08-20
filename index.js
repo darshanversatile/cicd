@@ -21,6 +21,7 @@ app.post("/", (req, res) => {
     res.send("Request body written to file successfully");
   });
 });
+
 app.get("/", (req, res) => {
   const filePath = path.join(__dirname, "request-body.txt");
 
