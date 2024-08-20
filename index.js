@@ -11,7 +11,7 @@ const filePath = path.join(__dirname, "request-body.txt");
 
 app.post("/", (req, res) => {
   const payload = req.body;
-
+  console.log(payload);
   // Log payload for debugging
   fs.writeFile(filePath, JSON.stringify(payload, null, 2), (err) => {
     if (err) {
