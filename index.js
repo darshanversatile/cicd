@@ -10,25 +10,37 @@ app.use(express.urlencoded({ extended: true })); // For URL-encoded payloads
 const filePath = path.join(__dirname, "request-body.txt");
 
 app.post("/", (req, res) => {
-  const payload = req.body;
-  console.log(payload);
-  // Log payload for debugging
-  fs.writeFile(filePath, JSON.stringify(payload, null, 2), (err) => {
+  const { payload } = req.body;
+
+  // Parse the payload from a JSON string to an object
+  let parsedPayload;
+  try {
+    parsedPayload = JSON.parse(payload);
+  } catch (err) {
+    console.error("Error parsing payload:", err);
+    return res.status(400).send("Bad Request: Invalid payload format");
+  }
+
+  // Log the parsed payload for debugging
+  fs.writeFile(filePath, JSON.stringify(parsedPayload, null, 2), (err) => {
     if (err) {
       console.error("Error writing to file:", err);
       return res.status(500).send("Internal Server Error");
     }
   });
 
-  // Check for the specific merge event
-  if (payload.ref === "refs/heads/prod" && payload.before && payload.after) {
-    // Look for a specific push event where 'main' was merged into 'prod'
-    const isMerge = payload.commits.some((commit) =>
-      commit.message.includes("Merge branch 'main'")
-    );
+  // Check if this is a pull request closed event with a merge
+  if (
+    parsedPayload.action === "closed" &&
+    parsedPayload.pull_request &&
+    parsedPayload.pull_request.merged_at
+  ) {
+    // Check if the PR merged 'main' into 'prod'
+    const headBranch = parsedPayload.pull_request.head.ref;
+    const baseBranch = parsedPayload.pull_request.base.ref;
 
-    if (isMerge) {
-      // Send notification or handle the merge event
+    if (headBranch === "main" && baseBranch === "prod") {
+      // Handle the event when 'main' is merged into 'prod'
       console.log("The main branch was merged into the prod branch.");
       return res.send("Main branch merged into Prod branch.");
     }
