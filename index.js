@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { exec } = require("child_process");
 
 const app = express();
 
@@ -42,7 +43,28 @@ app.post("/", (req, res) => {
     if (headBranch === "main" && baseBranch === "prod") {
       // Handle the event when 'main' is merged into 'prod'
       console.log("The main branch was merged into the prod branch.");
-      return res.send("Main branch merged into Prod branch.");
+
+      // Define the directory where you want to run 'npm install'
+      const projectDir = `C:\\Users\\VERSATILE\\Desktop\\FlutterNodeMSSql_TemplateGit\\NodeMSSqlTemplate`;
+
+      // Run 'npm install' in the specified directory
+      exec(`cd ${projectDir} && npm install`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error running npm install: ${error.message}`);
+          return res
+            .status(500)
+            .send("Internal Server Error during npm install");
+        }
+        if (stderr) {
+          console.error(`npm install stderr: ${stderr}`);
+        }
+        console.log(`npm install stdout: ${stdout}`);
+        res.send(
+          "Main branch merged into Prod branch and npm install completed."
+        );
+      });
+
+      return; // Ensure no further response is sent
     }
   }
 
